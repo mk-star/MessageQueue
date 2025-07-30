@@ -1,4 +1,4 @@
-package org.example.messagequeue.domain;
+package org.example.messagequeue.messaging;
 
 import org.springframework.stereotype.Component;
 

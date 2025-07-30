@@ -1,6 +1,6 @@
 package org.example.messagequeue.config;
 
-import org.example.messagequeue.domain.Receiver;
+import org.example.messagequeue.messaging.Receiver;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;

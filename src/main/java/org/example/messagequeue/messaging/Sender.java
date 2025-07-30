@@ -1,4 +1,4 @@
-package org.example.messagequeue.domain;
+package org.example.messagequeue.messaging;
 
 import org.example.messagequeue.config.RabbitMQConfig;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
