@@ -6,54 +6,44 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class RabbitMQConfig {
-    public static final String ERROR_QUEUE = "error_queue";
-    public static final String WARN_QUEUE = "warn_queue";
-    public static final String INFO_QUEUE = "info_queue";
-    public static final String ALL_LOG_QUEUE = "all_log_queue";
-
-    public static final String TOPIC_EXCHANGE = "topic_exchange";
+    public static final String ORDER_COMPLETED_QUEUE = "order_completed_queue";
+    public static final String ORDER_EXCHANGE = "order_completed_exchange";
+    public static final String DLQ = "deadLetterQueue";
+    public static final String DLX = "deadLetterExchange";
 
     @Bean
-    public TopicExchange topicExchange() {
-        return new TopicExchange(TOPIC_EXCHANGE);
+    public TopicExchange orderExchange() {
+        return new TopicExchange(ORDER_EXCHANGE);
     }
 
     @Bean
-    public Queue errorQueue() {
-        return new Queue(ERROR_QUEUE, false);
+    public TopicExchange deadLetterExchange() {
+        return new TopicExchange(DLX);
+    }
+
+    // 메시지가 처리되지 못했을 경우 자동으로 Deadletterqueue 이동시킴
+    @Bean
+    public Queue orderQueue() {
+        return QueueBuilder.durable(ORDER_COMPLETED_QUEUE)
+                .withArgument("x-dead-letter-exchange", DLX) // Dead Letter Exchange 설정
+                .withArgument("x-dead-letter-routing-key", DLQ)
+                .ttl(5000) // 5초
+                .build();
     }
 
     @Bean
-    public Queue warnQueue() {
-        return new Queue(WARN_QUEUE, false);
+    public Queue deadLetterQueue() {
+        return new Queue(DLQ);
     }
 
     @Bean
-    public Queue infoQueue() {
-        return new Queue(INFO_QUEUE, false);
+    public Binding orderCompletedBinding() {
+        return BindingBuilder.bind(orderQueue()).to(orderExchange()).with("order.completed.#");
     }
 
     @Bean
-    public Queue allLogQueue() {
-        return new Queue(ALL_LOG_QUEUE, false);
+    public Binding deadLetterBinding() {
+        return BindingBuilder.bind(deadLetterQueue()).to(deadLetterExchange()).with(DLQ);
     }
 
-    @Bean
-    public Binding errorBinding() {
-        return BindingBuilder.bind(errorQueue()).to(topicExchange()).with("log.error");
-    }
-    @Bean
-    public Binding warnBinding() {
-        return BindingBuilder.bind(warnQueue()).to(topicExchange()).with("log.warn");
-    }
-
-    @Bean
-    public Binding infoBinding() {
-        return BindingBuilder.bind(infoQueue()).to(topicExchange()).with("log.info");
-    }
-
-    @Bean
-    public Binding allLogBinding() {
-        return BindingBuilder.bind(allLogQueue()).to(topicExchange()).with("log.*");
-    }
 }
