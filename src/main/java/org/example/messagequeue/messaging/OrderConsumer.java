@@ -1,46 +1,40 @@
 package org.example.messagequeue.messaging;
 
-import com.rabbitmq.client.Channel;
 import org.example.messagequeue.config.RabbitMQConfig;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
-import org.springframework.messaging.handler.annotation.Header;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Component;
-
-import java.io.IOException;
 
 @Component
 public class OrderConsumer {
-    private static final int MAX_RETRIES = 3; // 총 시도 제한 수
-    private int retryCount = 0; // 재시도 횟수
+    private final RabbitTemplate rabbitTemplate;
+    private final RetryTemplate retryTemplate;
 
-    @RabbitListener(queues = RabbitMQConfig.ORDER_COMPLETED_QUEUE, containerFactory = "rabbitListenerContainerFactory")
-    public void processOrder(String message, Channel channel, @Header("amqp_deliveryTag") long tag) {
-        try {
-            // 실패 유발
-            if ("fail".equalsIgnoreCase(message)) {
-                if (retryCount < MAX_RETRIES) {
-                    System.err.println("#### Fail  & Retry = " + retryCount);
-                    retryCount++;
+    public OrderConsumer(RabbitTemplate rabbitTemplate, RetryTemplate retryTemplate) {
+        this.rabbitTemplate = rabbitTemplate;
+        this.retryTemplate = retryTemplate;
+    }
+
+    @RabbitListener(queues = RabbitMQConfig.ORDER_COMPLETED_QUEUE)
+    public void consume(String message) {
+        retryTemplate.execute(context -> {
+            try {
+                System.out.println("# 리시브 메시지 : " + message + " # retry : " + context.getRetryCount());
+                // 실패 조건
+                if ("fail".equalsIgnoreCase(message)) {
                     throw new RuntimeException(message);
+                }
+                System.out.println("# 메시지 처리 성공 " + message);
+            } catch (Exception e) {
+                if (context.getRetryCount() >= 2) {
+                    rabbitTemplate.convertAndSend(RabbitMQConfig.ORDER_TOPIC_DLX,
+                            RabbitMQConfig.DEAD_LETTER_ROUTING_KEY, message);
                 } else {
-                    System.err.println("#### 최대 횟수 초과, DLQ 이동 시킴 ");
-                    retryCount = 0;
-                    channel.basicNack(tag, false, false);
-                    return;
+                    throw e;
                 }
             }
-            // 성공 처리
-            System.out.println("# 성공 : " + message);
-            channel.basicAck(tag, false);
-            retryCount = 0;
-        } catch (Exception e) {
-            System.err.println("# error 발생 : " + e.getMessage());
-            try {
-                // 실패 시 basicReject 재처리 전송
-                channel.basicReject(tag, true);
-            } catch (IOException e1) {
-                System.err.println("# fail & reject message : " + e1.getMessage());
-            }
-        }
+            return null;
+        });
     }
 }
