@@ -6,44 +6,41 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class RabbitMQConfig {
-    public static final String FANOUT_EXCHANGE_FOR_NEWS = "newsExchange";
+    public static final String ERROR_QUEUE = "error_queue";
+    public static final String WARN_QUEUE = "warn_queue";
+    public static final String INFO_QUEUE = "info_queue";
 
-    public static final String JAVA_QUEUE = "javaQueue";
-    public static final String SPRING_QUEUE = "springQueue";
-    public static final String VUE_QUEUE = "vueQueue";
+    public static final String DIRECT_EXCHANGE = "direct_exchange";
 
     @Bean
-    public Queue javaQueue() {
-        return new Queue(JAVA_QUEUE, false);
+    public DirectExchange directExchange() {
+        return new DirectExchange(DIRECT_EXCHANGE);
     }
 
     @Bean
-    public Queue springQueue() {
-        return new Queue(SPRING_QUEUE, false);
+    public Queue errorQueue() {
+        return new Queue(ERROR_QUEUE, false);
     }
 
     @Bean
-    public Queue vueQueue() {
-        return new Queue(VUE_QUEUE, false);
+    public Queue warnQueue() {
+        return new Queue(WARN_QUEUE, false);
+    }
+    @Bean
+    public Queue infoQueue() {
+        return new Queue(INFO_QUEUE, false);
     }
 
     @Bean
-    public FanoutExchange fanoutExchange() {
-        return new FanoutExchange(FANOUT_EXCHANGE_FOR_NEWS);
+    public Binding errorBinding() {
+        return BindingBuilder.bind(errorQueue()).to(directExchange()).with("error");
     }
-
     @Bean
-    public Binding javaBinding(Queue javaQueue, FanoutExchange fanoutExchange) {
-        return BindingBuilder.bind(javaQueue).to(fanoutExchange);
+    public Binding warnBinding() {
+        return BindingBuilder.bind(warnQueue()).to(directExchange()).with("warn");
     }
-
     @Bean
-    public Binding springBinding(Queue springQueue, FanoutExchange fanoutExchange) {
-        return BindingBuilder.bind(springQueue).to(fanoutExchange);
-    }
-
-    @Bean
-    public Binding vueBinding(Queue vueQueue, FanoutExchange fanoutExchange) {
-        return BindingBuilder.bind(vueQueue).to(fanoutExchange);
+    public Binding infoBinding() {
+        return BindingBuilder.bind(infoQueue()).to(directExchange()).with("info");
     }
 }
