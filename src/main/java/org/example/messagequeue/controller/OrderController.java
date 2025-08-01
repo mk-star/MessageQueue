@@ -18,7 +18,7 @@ public class OrderController {
 
     @GetMapping
     public ResponseEntity<String> sendOrderMessage(@RequestParam String message) {
-        orderProducer.sendShpping(message);
+        orderProducer.sendShipping(message);
         return ResponseEntity.ok("Order Completed Message sent: " + message);
     }
 }
