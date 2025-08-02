@@ -29,7 +29,7 @@ public class OrderDeadLetterRetry {
             }
 
             // 수정된 메시지를 원래 큐로 다시 전송
-            rabbitTemplate.convertAndSend(RabbitMQConfig.ORDER_TOPIC_EXCHANGE, "order.completed", message);
+            rabbitTemplate.convertAndSend(RabbitMQConfig.ORDER_TOPIC_EXCHANGE, "order.completed.shipping", message);
             System.out.println("[DLQ] Message requeued to original queue: " + message);
         } catch (Exception e) {
             System.err.println("[DLQ] Failed to reprocess message: " + e.getMessage());
