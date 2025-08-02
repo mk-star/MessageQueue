@@ -36,13 +36,13 @@ public class RabbitMQConfig {
     // Dead Letter Queue 설정
     @Bean
     public Queue deadLetterQueue() {
-        return QueueBuilder.durable(DLQ).build();
+        return new Queue(DLQ);
     }
 
     // 원래 큐와 Exchange 바인딩
     @Bean
     public Binding orderQueueBinding() {
-        return BindingBuilder.bind(orderQueue()).to(orderExchange()).with("order.completed");
+        return BindingBuilder.bind(orderQueue()).to(orderExchange()).with("order.completed.*");
     }
 
     // Dead Letter Queue와 Dead Letter Exchange 바인딩
