@@ -1,18 +1,27 @@
 spring:
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        format_sql: true
+    show-sql: true
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
   rabbitmq:
     host: localhost
     port: 5672
     username: guestuser
     password: guestuser
-    listener:
-      simple:
-        retry:
-          enabled: true # 재시도 활성화
-          initial-interval: 1000 # 첫 재시도 대기 시간 1초
-          max-attempts: 3 # 최대 재시도 횟수
-          max-interval: 1000 # 시도간 최대 대기시간
-        default-requeue-rejected: false # 재시도 실패 시 자동으로 DLQ로 이동
   application:
-    name: MessageQueue
+    name: HelloMessageQueue
 server:
   port: 8080
