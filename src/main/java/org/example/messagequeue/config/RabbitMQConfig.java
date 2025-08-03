@@ -1,53 +1,31 @@
 package org.example.messagequeue.config;
 
-import org.springframework.amqp.core.*;
+import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
+import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class RabbitMQConfig {
-    public static final String ORDER_COMPLETED_QUEUE = "orderCompletedQueue";
-    public static final String DLQ = "deadLetterQueue";
-    public static final String ORDER_TOPIC_EXCHANGE = "orderExchange";
-    public static final String ORDER_TOPIC_DLX = "deadLetterExchange";
-    public static final String DEAD_LETTER_ROUTING_KEY = "dead.letter";
-
-    // 원래 큐에 연결된 Topic Exchange
     @Bean
-    public TopicExchange orderExchange() {
-        return new TopicExchange(ORDER_TOPIC_EXCHANGE);
+    public Queue queue() {
+        return new Queue("transactionQueue", true);
     }
 
-    // Dead Letter Exchange
     @Bean
-    public TopicExchange deadLetterExchange() {
-        return new TopicExchange(ORDER_TOPIC_DLX);
+    public MessageConverter messageConverter() {
+        return new Jackson2JsonMessageConverter();
     }
 
-    // 원래 큐 설정
     @Bean
-    public Queue orderQueue() {
-        return QueueBuilder.durable(ORDER_COMPLETED_QUEUE)
-                .withArgument("x-dead-letter-exchange", ORDER_TOPIC_DLX) // DLX 설정
-                .withArgument("x-dead-letter-routing-key", DEAD_LETTER_ROUTING_KEY) // DLQ로 이동할 라우팅 키 설정
-                .build();
-    }
+    public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory, MessageConverter messageConverter) {
+        RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
+        rabbitTemplate.setMessageConverter(messageConverter); // JSON 변환기 등록
+        rabbitTemplate.setChannelTransacted(true);  // 트랜잭션 활성화
 
-    // Dead Letter Queue 설정
-    @Bean
-    public Queue deadLetterQueue() {
-        return new Queue(DLQ);
-    }
-
-    // 원래 큐와 Exchange 바인딩
-    @Bean
-    public Binding orderQueueBinding() {
-        return BindingBuilder.bind(orderQueue()).to(orderExchange()).with("order.completed.*");
-    }
-
-    // Dead Letter Queue와 Dead Letter Exchange 바인딩
-    @Bean
-    public Binding deadLetterQueueBinding() {
-        return BindingBuilder.bind(deadLetterQueue()).to(deadLetterExchange()).with(DEAD_LETTER_ROUTING_KEY);
+        return rabbitTemplate;
     }
 }
