@@ -11,34 +11,56 @@
 <h1>Notifications</h1>
 <div id="notifications"></div>
 
-<form id="notificationForm">
-    <input type="tel" id="notificationMessage" placeholder="입력하세요" required>
+<form id="chatForm">
+    <input type="input" id="roomId" placeholder="채팅방 ID를 입력하세요" required>
+    <input type="input" id="message" placeholder="메시지를 입력하세요" required>
     <button type="submit">전송</button>
 </form>
+
+<div id="messages"></div>
+<!-- Notifications -->
+
 <script>
+
     const socket = new SockJS('/ws'); // 서버의 WebSocket Endpoint 연결
     const stompClient = Stomp.over(socket); // SockJS 객체를 STOMP 클라이언트로 wrapping
 
     stompClient.connect({}, function () {
         console.log('Connected to WebSocket');
-        // 서버로 부터 메시지 구독
-        stompClient.subscribe('/topic/notifications', function (message) {
-            const notificationsDiv = document.getElementById('notifications');
-            const newNotification = document.createElement('div');
-            newNotification.textContent = message.body;
-            notificationsDiv.appendChild(newNotification);
+        // 서버로부터 메시지 구독
+        stompClient.subscribe('/exchange/chat.exchange/chat.room.1', function (message) {
+            console.log('Received: ' + JSON.parse(message.body).message);
+            addMessageToDiv(JSON.parse(message.body).message);
         });
+
         // 서버로 전송도 가능
-        const form = document.getElementById('notificationForm')
+        const form = document.getElementById('chatForm')
         form.addEventListener('submit', function (event) {
             event.preventDefault();
-            const messageInput = document.getElementById('notificationMessage');
-            const message = messageInput.value;
-
-            stompClient.send('/app/send', {}, JSON.stringify({ message: message }));
-            messageInput.value = '';
+            sendMessage();
         })
     });
+
+    // 서버에 메시지를 전송
+    function sendMessage() {
+        const roomId = document.getElementById("roomId").value;
+        const message = document.getElementById("message").value;
+
+        console.log(` roomId ${roomId}`);
+        stompClient.send('/app/chat.message.' + roomId, {}, JSON.stringify({
+            roomId: roomId,
+            message: message
+        }));
+        console.log(`Sent message to server: ${message}`);
+    }
+
+    // 화면에 표시
+    function addMessageToDiv(message) {
+        const messageDiv = document.getElementById("messages");
+        const newMessage = document.createElement("div");
+        newMessage.textContent = message;
+        messageDiv.appendChild(newMessage);
+    }
 </script>
 </body>
 </html>
